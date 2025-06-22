@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rainbow Six Siege Stats Widget</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #121212;
+            color: #fff;
+            text-align: center;
+        }
+        #widget {
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 20px;
+            border-radius: 10px;
+            width: 300px;
+            margin: 50px auto;
+        }
+        .stat {
+            margin: 10px 0;
+        }
+        .stat span {
+            font-weight: bold;
+        }
+        img {
+            width: 100px;
+            border-radius: 50%;
+        }
+    </style>
+</head>
+<body>
+    <div id="widget">
+        <img id="avatar" src="" alt="Avatar">
+        <h2 id="username">Loading...</h2>
+        <div class="stat">
+            <span>K/D Ratio: </span><span id="kdRatio">Loading...</span>
+        </div>
+        <div class="stat">
+            <span>Rank: </span><span id="rank">Loading...</span>
+        </div>
+        <div class="stat">
+            <span>Wins: </span><span id="wins">Loading...</span>
+        </div>
+        <div class="stat">
+            <span>Losses: </span><span id="losses">Loading...</span>
+        </div>
+        <div class="stat">
+            <span>Win Percentage: </span><span id="winPercentage">Loading...</span>
+        </div>
+    </div>
+
+    <script>
+        const username = 'digobey'; // Alterar para o nome de usuário desejado
+        const platform = 'ubi'; // 'ubi' para Ubisoft
+
+        // Função para buscar os dados da API
+        function fetchPlayerData() {
+            fetch(`https://api.tracker.gg/api/v2/r6siege/standard/profile/${platform}/${username}`)
+                .then(response => response.json())
+                .then(data => {
+                    const player = data.data;
+                    const seasonData = player.segments.find(segment => segment.type === 'season' && segment.attributes.season === 38); // Temporada 38
+
+                    document.getElementById('avatar').src = player.platformInfo.avatarUrl;
+                    document.getElementById('username').textContent = player.platformInfo.platformUserHandle;
+                    document.getElementById('kdRatio').textContent = seasonData.stats.kdRatio.displayValue;
+                    document.getElementById('rank').textContent = seasonData.stats.rank.displayValue;
+                    document.getElementById('wins').textContent = seasonData.stats.matchesWon.displayValue;
+                    document.getElementById('losses').textContent = seasonData.stats.matchesLost.displayValue;
+                    document.getElementById('winPercentage').textContent = seasonData.stats.winPercentage.displayValue;
+                })
+                .catch(err => {
+                    console.error('Erro ao buscar os dados:', err);
+                });
+        }
+
+        // Atualiza o widget a cada 20 segundos
+        setInterval(fetchPlayerData, 20000); // 20000ms = 20 segundos
+
+        // Chama a função uma vez na inicialização
+        fetchPlayerData();
+    </script>
+</body>
+</html>
