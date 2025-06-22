@@ -34,22 +34,17 @@
 </head>
 <body>
     <div id="widget">
-        <img id="avatar" src="" alt="Avatar">
-        <h2 id="username">Loading...</h2>
-        <div class="stat">
-            <span>K/D Ratio: </span><span id="kdRatio">Loading...</span>
-        </div>
         <div class="stat">
             <span>Rank: </span><span id="rank">Loading...</span>
         </div>
         <div class="stat">
-            <span>Wins: </span><span id="wins">Loading...</span>
+            <span>MMR: </span><span id="mmr">Loading...</span>
         </div>
         <div class="stat">
-            <span>Losses: </span><span id="losses">Loading...</span>
+            <span>K/D Ratio: </span><span id="kdRatio">Loading...</span>
         </div>
         <div class="stat">
-            <span>Win Percentage: </span><span id="winPercentage">Loading...</span>
+            <span>W/L Ratio: </span><span id="wlRatio">Loading...</span>
         </div>
     </div>
 
@@ -65,13 +60,22 @@
                     const player = data.data;
                     const seasonData = player.segments.find(segment => segment.type === 'season' && segment.attributes.season === 38); // Temporada 38
 
-                    document.getElementById('avatar').src = player.platformInfo.avatarUrl;
-                    document.getElementById('username').textContent = player.platformInfo.platformUserHandle;
+                    const wins = parseInt(seasonData.stats.matchesWon.displayValue);
+                    const losses = parseInt(seasonData.stats.matchesLost.displayValue);
+                    const wlRatio = (wins / losses).toFixed(2); // Calcula a razão W/L e limita a 2 casas decimais
+
+                    // Exibe as informações no widget
                     document.getElementById('kdRatio').textContent = seasonData.stats.kdRatio.displayValue;
-                    document.getElementById('rank').textContent = seasonData.stats.rank.displayValue;
-                    document.getElementById('wins').textContent = seasonData.stats.matchesWon.displayValue;
-                    document.getElementById('losses').textContent = seasonData.stats.matchesLost.displayValue;
-                    document.getElementById('winPercentage').textContent = seasonData.stats.winPercentage.displayValue;
+
+                    // Exibe o nome do rank (em vez do número)
+                    const rankName = seasonData.stats.rankPoints.metadata.name;
+                    document.getElementById('rank').textContent = rankName;
+
+                    // Exibe MMR (Rank Points)
+                    document.getElementById('mmr').textContent = seasonData.stats.rankPoints.displayValue;
+
+                    // Exibe a razão W/L
+                    document.getElementById('wlRatio').textContent = wlRatio;
                 })
                 .catch(err => {
                     console.error('Erro ao buscar os dados:', err);
