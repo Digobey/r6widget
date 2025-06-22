@@ -3,44 +3,91 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Meu Site no GitHub Pages</title>
+    <title>Meu Site - Rainbow Six Siege Stats Widget</title>
     <style>
         body {
             font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
             background-color: #121212;
             color: #fff;
             text-align: center;
-            margin: 0;
-            padding: 0;
         }
-        header {
-            background-color: #333;
+        #widget {
+            background-color: rgba(0, 0, 0, 0.7);
             padding: 20px;
+            border-radius: 10px;
+            width: 300px;
+            margin: 50px auto;
         }
-        footer {
-            background-color: #333;
-            padding: 10px;
-            position: fixed;
-            bottom: 0;
-            width: 100%;
+        .stat {
+            margin: 10px 0;
         }
-        h1 {
-            margin-top: 100px;
+        .stat span {
+            font-weight: bold;
+        }
+        img {
+            width: 100px;
+            border-radius: 50%;
         }
     </style>
 </head>
 <body>
-    <header>
-        <h1>Bem-vindo ao Meu Site!</h1>
-    </header>
+    <!-- Widget Rainbow Six Siege -->
+    <div id="widget">
+        <div class="stat">
+            <span>Rank: </span><span id="rank">Loading...</span>
+        </div>
+        <div class="stat">
+            <span>MMR: </span><span id="mmr">Loading...</span>
+        </div>
+        <div class="stat">
+            <span>K/D Ratio: </span><span id="kdRatio">Loading...</span>
+        </div>
+        <div class="stat">
+            <span>W/L Ratio: </span><span id="wlRatio">Loading...</span>
+        </div>
+    </div>
 
-    <main>
-        <p>Este é o conteúdo da minha página inicial. Aqui você pode colocar suas informações ou links.</p>
-        <p>Aprenda a criar e personalizar páginas web com HTML!</p>
-    </main>
+    <script>
+        const username = 'digobey'; // Alterar para o nome de usuário desejado
+        const platform = 'ubi'; // 'ubi' para Ubisoft
 
-    <footer>
-        <p>&copy; 2025 Meu Site | Feito com amor!</p>
-    </footer>
+        // Função para buscar os dados da API
+        function fetchPlayerData() {
+            fetch(`https://api.tracker.gg/api/v2/r6siege/standard/profile/${platform}/${username}`)
+                .then(response => response.json())
+                .then(data => {
+                    const player = data.data;
+                    const seasonData = player.segments.find(segment => segment.type === 'season' && segment.attributes.season === 38); // Temporada 38
+
+                    const wins = parseInt(seasonData.stats.matchesWon.displayValue);
+                    const losses = parseInt(seasonData.stats.matchesLost.displayValue);
+                    const wlRatio = (wins / losses).toFixed(2); // Calcula a razão W/L e limita a 2 casas decimais
+
+                    // Exibe as informações no widget
+                    document.getElementById('kdRatio').textContent = seasonData.stats.kdRatio.displayValue;
+
+                    // Exibe o nome do rank (em vez do número)
+                    const rankName = seasonData.stats.rankPoints.metadata.name;
+                    document.getElementById('rank').textContent = rankName;
+
+                    // Exibe MMR (Rank Points)
+                    document.getElementById('mmr').textContent = seasonData.stats.rankPoints.displayValue;
+
+                    // Exibe a razão W/L
+                    document.getElementById('wlRatio').textContent = wlRatio;
+                })
+                .catch(err => {
+                    console.error('Erro ao buscar os dados:', err);
+                });
+        }
+
+        // Atualiza o widget a cada 20 segundos
+        setInterval(fetchPlayerData, 20000); // 20000ms = 20 segundos
+
+        // Chama a função uma vez na inicialização
+        fetchPlayerData();
+    </script>
 </body>
 </html>
