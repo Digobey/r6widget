@@ -17,11 +17,13 @@
             background-color: rgba(0, 0, 0, 0.7);
             padding: 20px;
             border-radius: 10px;
-            width: 300px;
+            width: 100%;
+            max-width: 300px;
             margin: 50px auto;
         }
         .stat {
-            margin: 10px 0;
+            margin: 15px 0;
+            transition: all 0.3s ease;
         }
         .stat span {
             font-weight: bold;
@@ -35,16 +37,16 @@
 <body>
     <!-- Widget Rainbow Six Siege -->
     <div id="widget">
-        <div class="stat">
+        <div class="stat" aria-label="Rank:">
             <span>Rank: </span><span id="rank">Loading...</span>
         </div>
-        <div class="stat">
+        <div class="stat" aria-label="MMR:">
             <span>MMR: </span><span id="mmr">Loading...</span>
         </div>
-        <div class="stat">
+        <div class="stat" aria-label="K/D Ratio:">
             <span>K/D Ratio: </span><span id="kdRatio">Loading...</span>
         </div>
-        <div class="stat">
+        <div class="stat" aria-label="W/L Ratio:">
             <span>W/L Ratio: </span><span id="wlRatio">Loading...</span>
         </div>
     </div>
@@ -61,9 +63,13 @@
                     const player = data.data;
                     const seasonData = player.segments.find(segment => segment.type === 'season' && segment.attributes.season === 38); // Temporada 38
 
+                    if (!seasonData || !seasonData.stats) {
+                        throw new Error('Dados da temporada não encontrados');
+                    }
+
                     const wins = parseInt(seasonData.stats.matchesWon.displayValue);
                     const losses = parseInt(seasonData.stats.matchesLost.displayValue);
-                    const wlRatio = (wins / losses).toFixed(2); // Calcula a razão W/L e limita a 2 casas decimais
+                    const wlRatio = (wins + losses > 0) ? (wins / losses).toFixed(2) : 'N/A'; // Verifica se o número de vitórias e derrotas é maior que 0
 
                     // Exibe as informações no widget
                     document.getElementById('kdRatio').textContent = seasonData.stats.kdRatio.displayValue;
@@ -80,6 +86,10 @@
                 })
                 .catch(err => {
                     console.error('Erro ao buscar os dados:', err);
+                    document.getElementById('rank').textContent = 'Erro ao carregar dados';
+                    document.getElementById('mmr').textContent = 'Erro ao carregar dados';
+                    document.getElementById('kdRatio').textContent = 'Erro ao carregar dados';
+                    document.getElementById('wlRatio').textContent = 'Erro ao carregar dados';
                 });
         }
 
