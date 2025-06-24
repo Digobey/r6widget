@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt-br">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -32,12 +32,19 @@
             width: 100px;
             border-radius: 50%;
         }
+        .rank-img {
+            width: 30px;
+            height: 30px;
+            vertical-align: middle;
+        }
     </style>
 </head>
 <body>
+    <!-- Widget Rainbow Six Siege -->
     <div id="widget">
         <div class="stat" aria-label="Rank:">
-            <span>Rank: </span><span id="rank">Loading...</span>
+            <span>Rank: </span><span id="rank">Loading...</span> 
+            <img id="rankIcon" class="rank-img" src="" alt="Rank do jogador">
         </div>
         <div class="stat" aria-label="MMR:">
             <span>MMR: </span><span id="mmr">Loading...</span>
@@ -51,37 +58,75 @@
     </div>
 
     <script>
-        const username = 'digobey'; // Alterar para o nome de usuário desejado
+        const username = 'digobey'; // Nome do jogador
         const platform = 'ubi'; // 'ubi' para Ubisoft
+        const lastUpdatedKey = 'lastUpdated';
+        const winsKey = 'wins';
+        const lossesKey = 'losses';
 
-        // Função para buscar os dados da API
+        // Função para verificar se os dados estão atualizados
+        function isDataExpired() {
+            const lastUpdated = localStorage.getItem(lastUpdatedKey);
+            const currentTime = Date.now();
+
+            if (!lastUpdated) return true; // Se nunca foi salvo, buscar novos dados
+
+            const timeDiff = currentTime - lastUpdated;
+            const oneDayInMillis = 24 * 60 * 60 * 1000; // 24 horas em milissegundos
+            return timeDiff > oneDayInMillis; // Verifica se passou mais de 24 horas
+        }
+
+        // Função para armazenar os dados no localStorage
+        function storeStats(stats) {
+            localStorage.setItem('kdRatio', stats.kdRatio);
+            localStorage.setItem('wlRatio', stats.wlRatio);
+            localStorage.setItem('rank', stats.rank);
+            localStorage.setItem('mmr', stats.mmr);
+            localStorage.setItem('rankIcon', stats.rankIcon);
+            localStorage.setItem(winsKey, stats.totalWins);
+            localStorage.setItem(lossesKey, stats.totalLosses);
+            localStorage.setItem(lastUpdatedKey, Date.now());
+        }
+
+        // Função para buscar os dados do jogador
         function fetchPlayerData() {
+            // Corrigindo a interpolação da URL
             fetch(`https://api.tracker.gg/api/v2/r6siege/standard/profile/${platform}/${username}`)
                 .then(response => response.json())
                 .then(data => {
                     const player = data.data;
-                    const seasonData = player.segments.find(segment => segment.type === 'season' && segment.attributes.season === 38); // Temporada 38
 
-                    if (!seasonData || !seasonData.stats) {
-                        throw new Error('Dados da temporada não encontrados');
+                    if (!player || !player.segments) {
+                        throw new Error('Dados não encontrados');
                     }
 
-                    const wins = parseInt(seasonData.stats.matchesWon.displayValue);
-                    const losses = parseInt(seasonData.stats.matchesLost.displayValue);
-                    const wlRatio = (wins + losses > 0) ? (wins / losses).toFixed(2) : 'N/A'; // Verifica se o número de vitórias e derrotas é maior que 0
+                    // Aqui, buscamos os dados totais de vitórias e derrotas, não da temporada.
+                    const generalStats = player.segments[0].stats;
+                    const totalWins = parseInt(generalStats.matchesWon.displayValue);
+                    const totalLosses = parseInt(generalStats.matchesLost.displayValue);
 
-                    // Exibe as informações no widget
-                    document.getElementById('kdRatio').textContent = seasonData.stats.kdRatio.displayValue;
+                    // Calcular a razão W/L
+                    const wlRatio = (totalWins + totalLosses > 0) ? (totalWins / totalLosses).toFixed(2) : 'N/A';
 
-                    // Exibe o nome do rank (em vez do número)
-                    const rankName = seasonData.stats.rankPoints.metadata.name;
-                    document.getElementById('rank').textContent = rankName;
+                    const stats = {
+                        kdRatio: generalStats.kdRatio.displayValue,
+                        rank: generalStats.rankPoints.metadata.name,
+                        mmr: generalStats.rankPoints.displayValue,
+                        wlRatio,
+                        rankIcon: generalStats.rankPoints.metadata.imageUrl,
+                        totalWins: totalWins,
+                        totalLosses: totalLosses
+                    };
 
-                    // Exibe MMR (Rank Points)
-                    document.getElementById('mmr').textContent = seasonData.stats.rankPoints.displayValue;
+                    // Armazenar os dados no localStorage
+                    storeStats(stats);
 
-                    // Exibe a razão W/L
-                    document.getElementById('wlRatio').textContent = wlRatio;
+                    // Exibir as informações no widget
+                    document.getElementById('kdRatio').textContent = stats.kdRatio;
+                    document.getElementById('rank').textContent = stats.rank;
+                    document.getElementById('mmr').textContent = stats.mmr;
+                    document.getElementById('wlRatio').textContent = stats.wlRatio;
+                    document.getElementById('rankIcon').src = stats.rankIcon;
                 })
                 .catch(err => {
                     console.error('Erro ao buscar os dados:', err);
@@ -92,11 +137,38 @@
                 });
         }
 
-        // Atualiza o widget a cada 20 segundos
-        setInterval(fetchPlayerData, 20000); // 20000ms = 20 segundos
+        // Função para carregar os dados do localStorage
+        function loadStatsFromLocalStorage() {
+            const stats = {
+                kdRatio: localStorage.getItem('kdRatio'),
+                wlRatio: localStorage.getItem('wlRatio'),
+                rank: localStorage.getItem('rank'),
+                mmr: localStorage.getItem('mmr'),
+                rankIcon: localStorage.getItem('rankIcon')
+            };
 
-        // Chama a função uma vez na inicialização
-        fetchPlayerData();
+            // Verifica se os dados no localStorage estão atualizados
+            if (stats.kdRatio && stats.wlRatio && stats.rank && !isDataExpired()) {
+                document.getElementById('kdRatio').textContent = stats.kdRatio;
+                document.getElementById('rank').textContent = stats.rank;
+                document.getElementById('mmr').textContent = stats.mmr;
+                document.getElementById('wlRatio').textContent = stats.wlRatio;
+                document.getElementById('rankIcon').src = stats.rankIcon;
+            } else {
+                fetchPlayerData(); // Se os dados estiverem expirados ou não presentes, buscar novos dados
+            }
+        }
+
+        // Se os dados estiverem expirados, buscar novos dados
+        loadStatsFromLocalStorage();
+
+        // Atualiza os dados a cada 20 segundos (caso o tempo não tenha expirado)
+        setInterval(() => {
+            if (isDataExpired()) {
+                fetchPlayerData();
+            }
+        }, 20000); // 20000ms = 20 segundos
+
     </script>
 </body>
 </html>
